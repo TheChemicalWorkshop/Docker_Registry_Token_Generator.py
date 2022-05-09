@@ -1,0 +1,145 @@
+Basically the token requires KID (keyID)
+
+the docker documentation lists:
+ 1. Take the DER encoded public key which the JWT token was signed against.
+ 2. Create a SHA256 hash out of it and truncate to 240bits.
+ 3. Split the result into 12 base32 encoded groups with : as delimiter.
+
+which is not a lie, but like, very incorrect
+
+if you think you can run `openssl x509 -in publickey.crt -noout -outform der -pubkey` you will be stuck for weeks like me here https://forums.docker.com/t/need-help-with-nginx-as-authentication-for-private-docker-repository/124018
+oh and if you think `openssl x509 -in cert.pem -out cert.der -outform DER` here is a spoiler --> IT DOES NOT !
+
+to make this example easy to understand I will show you my public key
+
+```
+-----BEGIN CERTIFICATE-----
+MIIFSDCCBDCgAwIBAgISBPAmecblR7O+nFPma9OI99Y+MA0GCSqGSIb3DQEBCwUA
+MDIxCzAJBgNVBAYTAlVTMRYwFAYDVQQKEw1MZXQncyBFbmNyeXB0MQswCQYDVQQD
+EwJSMzAeFw0yMjA0MjkxOTEyNDRaFw0yMjA3MjgxOTEyNDNaMCwxKjAoBgNVBAMT
+IWRvY2tlcmh1Yi50aGVjaGVtaWNhbHdvcmtzaG9wLmNvbTCCASIwDQYJKoZIhvcN
+AQEBBQADggEPADCCAQoCggEBALEHxzpvbYXA44C+JeN9skJCVEY1/3aAPxXIqcSx
+oImqR6/GwtW7rMbyEYMc2oMnONpc4uFj/KyPpAEzYkSIaNSNv9QSOzLl5Zhxzu7B
+pyF1WJZ6Fu3D3qalki1QUHYei51mfmfw5WCXW5Dx7tiWPk/hr78CePk/2JEWzHI2
+rBSQ59UvntTThO2BD6cSZkL733vZatSNiln7bjDgrR+Ei3vlNDCASa+9hu/ZkWu4
+xgksQAyuNyZ4+DryHiuRDmEDQ0VpDaVi8AXcUmc8g8N78uNKI4Le9mGZ9o2840Fc
+JUyQEAZ+Fbk2zq3u0BEET6Mcz6vkCFIG6uW1FONMFNovBqECAwEAAaOCAlwwggJY
+MA4GA1UdDwEB/wQEAwIFoDAdBgNVHSUEFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIw
+DAYDVR0TAQH/BAIwADAdBgNVHQ4EFgQU1CL+Krhur4zBDqkbIDC+bumuJSQwHwYD
+VR0jBBgwFoAUFC6zF7dYVsuuUAlA5h+vnYsUwsYwVQYIKwYBBQUHAQEESTBHMCEG
+CCsGAQUFBzABhhVodHRwOi8vcjMuby5sZW5jci5vcmcwIgYIKwYBBQUHMAKGFmh0
+dHA6Ly9yMy5pLmxlbmNyLm9yZy8wLAYDVR0RBCUwI4IhZG9ja2VyaHViLnRoZWNo
+ZW1pY2Fsd29ya3Nob3AuY29tMEwGA1UdIARFMEMwCAYGZ4EMAQIBMDcGCysGAQQB
+gt8TAQEBMCgwJgYIKwYBBQUHAgEWGmh0dHA6Ly9jcHMubGV0c2VuY3J5cHQub3Jn
+MIIBBAYKKwYBBAHWeQIEAgSB9QSB8gDwAHYAKXm+8J45OSHwVnOfY6V35b5XfZxg
+Cvj5TV0mXCVdx4QAAAGAdvRP7wAABAMARzBFAiBrJUDbkuIvqdyYBGeel48qk2vI
+sMHmWo8REgyyGjCQdAIhALnR1c5nECwddwoVMAniFNJQVU/W4Td2EV6DxKuUM0h8
+AHYAQcjKsd8iRkoQxqE6CUKHXk4xixsD6+tLx2jwkGKWBvYAAAGAdvRR3wAABAMA
+RzBFAiAIWrlx4dqakXCgtU2EcTDJbJolAWgNlfKblG8Y8uOlwwIhALNg55i2BTwJ
+HDTHfbvTAE+Y+Iz+VOSK4D89lSJjc3KrMA0GCSqGSIb3DQEBCwUAA4IBAQCjxyiC
+ZUZkIUjfDiKGBd5IqK1SOy1HxPJEQ6OD871h4DRQhZSN+7XAtPQRDGj1Zzhx1TDL
+i0jRCtnVGSbdj72G4JM6dTx7Zbf6qv6kQEmi/Pdkpyr47uEsWIS/gLNReHYXyAmY
+ccaYtGmIKFc0E24Yv9Bax43BHDk9EqiM2M+BPaP6LY07n4obiSDjegEC0fBMCnp4
+uYVxExQgxPVA1Ao6bAc2VgmhpsFdm61noVT9o6wbVwbel6mQjF6UM9+pxSNYLp/n
+n8uikfIDKNP8mqMcsVQztfkvSiceIY35IY6+gk80mEmo4ymRQcjktI13dkt0A6lf
+PwjgU98oe3JBoVd7
+-----END CERTIFICATE-----
+```
+
+this is my public key for the domain dockerhub dot thechemicalworkshop dot com
+
+however, the public key is not ONLY the public key
+you can decode the public key here https://report-uri.com/home/pem_decoder (or any other website)
+
+as you can see we have some info about the public key
+```
+Common Name: dockerhub.thechemicalworkshop.com
+Issued By: Let's Encrypt
+Issuing Certificate: R3
+Serial Number: 04F02679C6E547B3BE9C53E66BD388F7D63E
+Signature: sha256WithRSAEncryption
+Valid From: 19:12:44 29 Apr 2022
+Valid To: 19:12:43 28 Jul 2022
+Key Usage: Digital Signature, Key Encipherment
+Extended Key Usage: TLS Web Server Authentication, TLS Web Client Authentication
+Basic Constraints: CA:FALSE
+Subject Key Identifier: D4:22:FE:2A:B8:6E:AF:8C:C1:0E:A9:1B:20:30:BE:6E:E9:AE:25:24
+Authority Key Identifier: keyid:14:2E:B3:17:B7:58:56:CB:AE:50:09:40:E6:1F:AF:9D:8B:14:C2:C6
+Authority Info Access: OCSP - URI:http://r3.o.lencr.org CA Issuers - URI:http://r3.i.lencr.org/
+Subject Alternative Names: DNS:dockerhub.thechemicalworkshop.com
+```
+
+like it's been created by let's encrypt for my domain
+also we get stuff like Public Key Data
+```
+Key Algorithm: RSA
+Key Size: 2048 bits
+```
+and the Raw Data
+
+but most importantly we get an array (list) which contains our public key
+
+```
+-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsQfHOm9thcDjgL4l432y
+QkJURjX/doA/FcipxLGgiapHr8bC1busxvIRgxzagyc42lzi4WP8rI+kATNiRIho
+1I2/1BI7MuXlmHHO7sGnIXVYlnoW7cPepqWSLVBQdh6LnWZ+Z/DlYJdbkPHu2JY+
+T+GvvwJ4+T/YkRbMcjasFJDn1S+e1NOE7YEPpxJmQvvfe9lq1I2KWftuMOCtH4SL
+e+U0MIBJr72G79mRa7jGCSxADK43Jnj4OvIeK5EOYQNDRWkNpWLwBdxSZzyDw3vy
+40ojgt72YZn2jbzjQVwlTJAQBn4VuTbOre7QEQRPoxzPq+QIUgbq5bUU40wU2i8G
+oQIDAQAB
+-----END PUBLIC KEY-----
+```
+
+the public key is inside the PEM but it's not super easy to extract and some tools in python extract more or less than just the public key (took me 3 days to figure out)
+you can probably figure it out now that you know what you looking for
+
+so we have to convert this to DER format
+you can try with python tools/command line (but i failed)
+
+however we can do it by hand
+
+first we need to get rid of BEGIN PUBLIC KEY and END PUBLIC KEY
+
+```
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsQfHOm9thcDjgL4l432y
+QkJURjX/doA/FcipxLGgiapHr8bC1busxvIRgxzagyc42lzi4WP8rI+kATNiRIho
+1I2/1BI7MuXlmHHO7sGnIXVYlnoW7cPepqWSLVBQdh6LnWZ+Z/DlYJdbkPHu2JY+
+T+GvvwJ4+T/YkRbMcjasFJDn1S+e1NOE7YEPpxJmQvvfe9lq1I2KWftuMOCtH4SL
+e+U0MIBJr72G79mRa7jGCSxADK43Jnj4OvIeK5EOYQNDRWkNpWLwBdxSZzyDw3vy
+40ojgt72YZn2jbzjQVwlTJAQBn4VuTbOre7QEQRPoxzPq+QIUgbq5bUU40wU2i8G
+oQIDAQAB
+```
+
+to convert this to DER format we need to base64 DECODE it, im also converting everything into hex as it would just yield a mess of unknown ascii characters
+
+```
+30820122300d06092a864886f70d01010105000382010f003082010a0282010100b107c73a6f6d85c0e380be25e37db24242544635ff76803f15c8a9c4b1a089aa47afc6c2d5bbacc6f211831cda832738da5ce2e163fcac8fa4013362448868d48dbfd4123b32e5e59871ceeec1a7217558967a16edc3dea6a5922d5050761e8b9d667e67f0e560975b90f1eed8963e4fe1afbf0278f93fd89116cc7236ac1490e7d52f9ed4d384ed810fa7126642fbdf7bd96ad48d8a59fb6e30e0ad1f848b7be534308049afbd86efd9916bb8c6092c400cae372678f83af21e2b910e61034345690da562f005dc52673c83c37bf2e34a2382def66199f68dbce3415c254c9010067e15b936ceadeed011044fa31ccfabe4085206eae5b514e34c14da2f06a10203010001
+```
+
+so this is our Public Key of the PEM in DER format shown as hex
+
+now we need to sha256 it, we gonna do it on the bytes instead of hex
+
+which gives us (bytes):
+
+```
+\xe7K\xf9j\xd4\xc0\xbc\x98g\xd8w7\x04G$\x0eASk\xcf\xc4\x91XET+\x00\x9a\xae<\x80~
+```
+
+now we "truncate to 240bits" which in english means shorten to 30 characters
+
+```
+\xe7K\xf9j\xd4\xc0\xbc\x98g\xd8w7\x04G$\x0eASk\xcf\xc4\x91XET+\x00\x9a\xae<
+```
+
+anyways finally we base 32 ENCODE the raw bytes to get our bytes KID
+```
+45F7S2WUYC6JQZ6YO43QIRZEBZAVG26PYSIVQRKUFMAJVLR4
+```
+
+i convert to string so it's easier to deal with
+
+now we just put `:` every 4 characters and we got our KID (script stolen from here https://github.com/tswayne/js-libtrust/blob/main/index.js)
+
+`45F7:S2WU:YC6J:QZ6Y:O43Q:IRZE:BZAV:G26P:YSIV:QRKU:FMAJ:VLR4`
