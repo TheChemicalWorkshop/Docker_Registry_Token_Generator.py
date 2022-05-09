@@ -1,0 +1,30 @@
+https://docs.docker.com/registry/spec/auth/jwt/
+
+here are some infos on the format however here is the data i found out works (versions below)
+
+Token consists of:
+
+HEADER:
+algorithm - RS256 or different (gets filled out automatically)
+kid - 48 alphanumeric characters seperated by : every 4 charactes (generation and specification in kid_format_specification)
+typ - JWT (gets filled out automatically)
+
+PAYLOAD
+
+iss - issuer, must be same as REGISTRY_AUTH_TOKEN_ISSUER
+aud - audition? must be same as REGISTRY_AUTH_TOKEN_SERVICE
+sub - must be same as username (i think) so when you run docker login ip:port you provide username and password
+exp - expiration, integer in unix epoch, basically this token becomes worthless after that time ( i set this to current datimetime + 6h )
+nbf - not use before, integer in unix epoch, basically token useless before that date ( i set this 10 seconds before current datetime)
+iat - current time?, integer in unix epoch
+jti - basically a random string, numeric or alphanumeric
+
+then you need to pass a access list containing dictionaries:
+type - type of ressource you wanna access (repository)
+name - name of the repository (ubuntu or whatever)
+actions - LIST containing actions could be "actions": ["push", "pull"] or just "actions": ["*"]
+
+this all gets encoded using your PRIVATE KEY
+then your public key REGISTRY_AUTH_TOKEN_ROOTCERTBUNDLE must be correct
+both can be SSL like certbot or just self signed
+
